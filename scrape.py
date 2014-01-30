@@ -1,5 +1,17 @@
 #!/usr/bin/python
 
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 import bs4
 import urllib2
 import pprint
@@ -16,17 +28,12 @@ JENKINS = (
     'jenkins05',
     'jenkins06',
     'jenkins07',
-#    'jenkins08',
 )
 
-TEMPESTFULL = ("https://%s.openstack.org/job/"
-               "gate-tempest-dsvm-full/buildTimeTrend")
-PGTEMPESTFULL = ("https://%s.openstack.org/job/"
-                 "gate-tempest-dsvm-postgres-full/buildTimeTrend")
 
-
-def plot_data(template, fname):
+def plot_data(job, fname):
     COUNT = 1
+    template = "https://%s.openstack.org/job/" + job + "/buildTimeTrend"
 
     urls = map(lambda x: template % x, JENKINS)
     data = []
@@ -78,6 +85,9 @@ def plot_data(template, fname):
                 mpdata['rax-ord']['x'], mpdata['rax-ord']['y'],
                 )
     pl.ylim(0)
+    pl.ylabel("Minutes to Complete Job")
+    pl.xlabel("Run #")
+    pl.title("Timing to complete job %s" % job)
     pl.legend([p[0], p[1], p[2], p[3], p[4], p[5]],
               ['hpcloud-az1', 'hpcloud-az2', 'hpcloud-az3',
                'rax-iad', 'rax-dfw', 'rax-ord'],
@@ -86,7 +96,5 @@ def plot_data(template, fname):
 
     pl.savefig(fname)
 
-plot_data(TEMPESTFULL, 'tempest-full.png')
-plot_data(PGTEMPESTFULL, 'tempest-pg-full.png')
-
-# pp.pprint(data)
+plot_data("gate-tempest-dsvm-full", 'tempest-full.png')
+plot_data("gate-tempest-dsvm-postgres-full", 'tempest-pg-full.png')

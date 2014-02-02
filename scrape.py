@@ -30,16 +30,8 @@ JENKINS = (
     'jenkins07',
 )
 
-AZ = (
-    'hpcloud-az1',
-    'hpcloud-az2',
-    'hpcloud-az3',
-    'rax-iad',
-    'rax-dfw',
-    'rax-ord'
-    )
-
 def plot_data(job, fname):
+    AZ = []
     COUNT = 1
     template = "https://%s.openstack.org/job/" + job + "/buildTimeTrend"
 
@@ -62,6 +54,8 @@ def plot_data(job, fname):
                 bid = re.search('data="(\d+)"', str(cells[1])).group(1)
                 time = re.search('data="(\d+)"', str(cells[2])).group(1)
                 cloud = re.search('devstack-precise-([\w\-]+)-', str(cells[3])).group(1)
+                if cloud not in AZ:
+                    AZ.append(cloud)
                 print "Found cloud %s => %s" % (cloud, time)
                 if int(time) < (30 * 60 * 1000):
                     print "Suspect run time"
@@ -73,11 +67,13 @@ def plot_data(job, fname):
                 ))
 
     # you need very specific datastructures for matplotlib
-    mpdata = {x: {'x': [], 'y': []} for x in AZ}
+    AZ = sorted(AZ)
+    mpdata = {x: {'x': [], 'y': [], 'num': 0} for x in AZ}
 
     for d in data:
         mpdata[d['cloud']]['x'].append(COUNT)
         mpdata[d['cloud']]['y'].append(int(d['time']) / 60000)
+        mpdata[d['cloud']]['num'] += 1
         COUNT += 1
 
     pl.figure(figsize=(8, 6))
@@ -92,14 +88,15 @@ def plot_data(job, fname):
     pl.ylabel("Minutes to Complete Job")
     pl.xlabel("Run #")
     pl.title("Timing to complete job %s" % job)
-    pl.legend(p, AZ, loc=3)
+    legs = map(lambda x: "%s (%s)" % (x, mpdata[x]['num']), AZ)
+    pl.legend(p, legs, loc=3)
 
     pl.savefig(fname)
 
 
 def main():
-    plot_data("gate-tempest-dsvm-full", 'tempest-full.png')
-    plot_data("gate-tempest-dsvm-postgres-full", 'tempest-pg-full.png')
+    plot_data("check-tempest-dsvm-full", 'tempest-full.png')
+    plot_data("check-tempest-dsvm-postgres-full", 'tempest-pg-full.png')
 
 
 if __name__ == "__main__":

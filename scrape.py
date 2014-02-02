@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
+
 import bs4
 import urllib2
 import pprint
@@ -30,7 +32,7 @@ JENKINS = (
     'jenkins07',
 )
 
-def plot_data(job, fname):
+def plot_data(job):
     AZ = []
     COUNT = 1
     template = "https://%s.openstack.org/job/" + job + "/buildTimeTrend"
@@ -68,6 +70,9 @@ def plot_data(job, fname):
 
     # you need very specific datastructures for matplotlib
     AZ = sorted(AZ)
+    with open(job + ".json", "w") as f:
+        f.write(json.dumps({"AZ": AZ, "data": data}, indent=4))
+
     mpdata = {x: {'x': [], 'y': [], 'num': 0} for x in AZ}
 
     for d in data:
@@ -91,12 +96,12 @@ def plot_data(job, fname):
     legs = map(lambda x: "%s (%s)" % (x, mpdata[x]['num']), AZ)
     pl.legend(p, legs, loc=3)
 
-    pl.savefig(fname)
+    pl.savefig(job + ".png")
 
 
 def main():
-    plot_data("check-tempest-dsvm-full", 'tempest-full.png')
-    plot_data("check-tempest-dsvm-postgres-full", 'tempest-pg-full.png')
+    plot_data("check-tempest-dsvm-full")
+    plot_data("check-tempest-dsvm-postgres-full")
 
 
 if __name__ == "__main__":

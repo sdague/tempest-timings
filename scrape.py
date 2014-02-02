@@ -68,11 +68,13 @@ def collect_data(job):
                     cloud=cloud
                 ))
 
-    # you need very specific datastructures for matplotlib
     AZ = sorted(AZ)
+    return AZ, data
+
+
+def save_data(job, AZ, data):
     with open(job + ".json", "w") as f:
         f.write(json.dumps({"AZ": AZ, "data": data}, indent=4))
-    return AZ, data
 
 
 def load_data(job):
@@ -81,12 +83,15 @@ def load_data(job):
         return loaded['AZ'], loaded['data']
 
 
-def plot_data(job, fake=False):
+def plot_data(job, fake=False, save=False):
     if not fake:
         AZ, data = collect_data(job)
+        if save:
+            save_data(job, AZ, data)
     else:
         AZ, data = load_data(job)
 
+    # you need very specific datastructures for matplotlib
     mpdata = {x: {'x': [], 'y': [], 'num': 0} for x in AZ}
 
     COUNT = 0
@@ -118,8 +123,14 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Build time analysis tool for OpenStack gate"
     )
-    parser.add_argument('-f', '--fake', help="Load fake data",
-        type=bool,
+    parser.add_argument('-f', '--fake',
+        help="Load fake data",
+        action='store_true',
+        default=False
+    )
+    parser.add_argument('-s', '--save',
+        help="Save off data",
+        action='store_true',
         default=False
     )
     return parser.parse_args()
@@ -127,8 +138,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-    plot_data("check-tempest-dsvm-full", fake=args.fake)
-    plot_data("check-tempest-dsvm-postgres-full", fake=args.fake)
+    plot_data("check-tempest-dsvm-full", fake=args.fake, save=args.save)
+    plot_data("check-tempest-dsvm-postgres-full", fake=args.fake, save=args.save)
 
 
 if __name__ == "__main__":

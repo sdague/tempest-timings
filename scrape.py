@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import argparse
 import json
 
 import bs4
@@ -32,9 +33,8 @@ JENKINS = (
     'jenkins07',
 )
 
-def plot_data(job):
+def collect_data(job):
     AZ = []
-    COUNT = 1
     template = "https://%s.openstack.org/job/" + job + "/buildTimeTrend"
 
     urls = map(lambda x: template % x, JENKINS)
@@ -72,9 +72,24 @@ def plot_data(job):
     AZ = sorted(AZ)
     with open(job + ".json", "w") as f:
         f.write(json.dumps({"AZ": AZ, "data": data}, indent=4))
+    return AZ, data
+
+
+def load_data(job):
+    with open(job + ".json") as f:
+        loaded = json.load(f)
+        return loaded['AZ'], loaded['data']
+
+
+def plot_data(job, fake=False):
+    if not fake:
+        AZ, data = collect_data(job)
+    else:
+        AZ, data = load_data(job)
 
     mpdata = {x: {'x': [], 'y': [], 'num': 0} for x in AZ}
 
+    COUNT = 0
     for d in data:
         mpdata[d['cloud']]['x'].append(COUNT)
         mpdata[d['cloud']]['y'].append(int(d['time']) / 60000)
@@ -99,9 +114,21 @@ def plot_data(job):
     pl.savefig(job + ".png")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Build time analysis tool for OpenStack gate"
+    )
+    parser.add_argument('-f', '--fake', help="Load fake data",
+        type=bool,
+        default=False
+    )
+    return parser.parse_args()
+
+
 def main():
-    plot_data("check-tempest-dsvm-full")
-    plot_data("check-tempest-dsvm-postgres-full")
+    args = parse_args()
+    plot_data("check-tempest-dsvm-full", fake=args.fake)
+    plot_data("check-tempest-dsvm-postgres-full", fake=args.fake)
 
 
 if __name__ == "__main__":

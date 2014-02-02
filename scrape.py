@@ -20,6 +20,7 @@ import urllib2
 import pprint
 import re
 import pylab as pl
+import pandas as pd
 
 pp = pprint.PrettyPrinter()
 
@@ -76,11 +77,19 @@ def save_data(job, AZ, data):
     with open(job + ".json", "w") as f:
         f.write(json.dumps({"AZ": AZ, "data": data}, indent=4))
 
+def create_legends(az, data):
+    legs = []
+    for cloud in az:
+        series = pd.Series(data[cloud]['y'])
+        legs.append("%s - mean %.2fm / std %.2fm" %
+                    (cloud, series.mean(), series.std()))
+    return legs
+
 
 def load_data(job):
     with open(job + ".json") as f:
         loaded = json.load(f)
-        return loaded['AZ'], loaded['data']
+        return sorted(loaded['AZ']), loaded['data']
 
 
 def plot_data(job, fake=False, save=False):
@@ -113,7 +122,8 @@ def plot_data(job, fake=False, save=False):
     pl.ylabel("Minutes to Complete Job")
     pl.xlabel("Run #")
     pl.title("Timing to complete job %s" % job)
-    legs = map(lambda x: "%s (%s)" % (x, mpdata[x]['num']), AZ)
+    legs = create_legends(AZ, mpdata)
+    # legs = map(lambda x: "%s (%s)" % (x, mpdata[x]['num']), AZ)
     pl.legend(p, legs, loc=3)
 
     pl.savefig(job + ".png")

@@ -76,7 +76,7 @@ def plot_data(job, fname):
         mpdata[d['cloud']]['num'] += 1
         COUNT += 1
 
-    pl.figure(figsize=(8, 6))
+    pl.figure(figsize=(12, 9))
 
     axes = []
     for az in AZ:

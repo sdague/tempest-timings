@@ -34,6 +34,9 @@ JENKINS = (
     'jenkins07',
 )
 
+NODE_RE = re.compile('(devstack|bare)-precise-(?P<cloud>[\w\-]+)-')
+
+
 def collect_data(job):
     AZ = []
     template = "https://%s.openstack.org/job/" + job + "/buildTimeTrend"
@@ -56,7 +59,7 @@ def collect_data(job):
             if re.search('data="4"', str(cells[0])):
                 bid = re.search('data="(\d+)"', str(cells[1])).group(1)
                 time = re.search('data="(\d+)"', str(cells[2])).group(1)
-                cloud = re.search('devstack-precise-([\w\-]+)-', str(cells[3])).group(1)
+                cloud = NODE_RE.search(str(cells[3])).group('cloud')
                 if cloud not in AZ:
                     AZ.append(cloud)
                 print "Found cloud %s => %s" % (cloud, time)
@@ -76,6 +79,7 @@ def collect_data(job):
 def save_data(job, AZ, data):
     with open(job + ".json", "w") as f:
         f.write(json.dumps({"AZ": AZ, "data": data}, indent=4))
+
 
 def create_legends(az, data):
     legs = []
@@ -134,22 +138,22 @@ def parse_args():
         description="Build time analysis tool for OpenStack gate"
     )
     parser.add_argument('-f', '--fake',
-        help="Load fake data",
-        action='store_true',
-        default=False
-    )
+                        help="Load fake data",
+                        action='store_true',
+                        default=False)
     parser.add_argument('-s', '--save',
-        help="Save off data",
-        action='store_true',
-        default=False
-    )
+                        help="Save off data",
+                        action='store_true',
+                        default=False)
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     plot_data("check-tempest-dsvm-full", fake=args.fake, save=args.save)
-    plot_data("check-tempest-dsvm-postgres-full", fake=args.fake, save=args.save)
+    plot_data("check-tempest-dsvm-postgres-full",
+              fake=args.fake, save=args.save)
+    plot_data("gate-nova-python27", fake=args.fake, save=args.save)
 
 
 if __name__ == "__main__":

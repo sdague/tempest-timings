@@ -34,7 +34,7 @@ JENKINS = (
     'jenkins07',
 )
 
-NODE_RE = re.compile('(devstack|bare)-precise-(?P<cloud>[\w\-]+)-')
+NODE_RE = re.compile('(devstack|bare)-(precise|trusty)-(?P<cloud>[\w\-]+)-')
 
 
 def collect_data(job):

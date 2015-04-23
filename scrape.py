@@ -15,7 +15,6 @@
 import argparse
 import json
 
-import bs4
 import urllib2
 import pprint
 import re
@@ -39,38 +38,34 @@ NODE_RE = re.compile('(devstack|bare)-(precise|trusty)-(?P<cloud>[\w\-]+)-')
 
 def collect_data(job):
     AZ = []
-    template = "https://%s.openstack.org/job/" + job + "/buildTimeTrend"
+    template = ("https://%s.openstack.org/job/" + job +
+                "/api/json?tree=builds[builtOn,id,result,duration]")
 
     urls = map(lambda x: template % x, JENKINS)
     data = []
     for url in urls:
         print "scraping %s" % url
         page = urllib2.urlopen(url)
+        content = json.loads(page.read())
 
-        soup = bs4.BeautifulSoup(page.read())
-        builds = soup.select("table.sortable tr")
-
-        for build in builds:
-            tmp = bs4.BeautifulSoup("<html>" + str(build) + "</html>")
-            cells = tmp.findAll('td')
-            if not cells:
+        for build in content['builds']:
+            if not build['result'] == "SUCCESS":
                 continue
 
-            if re.search('data="4"', str(cells[0])):
-                bid = re.search('data="(\d+)"', str(cells[1])).group(1)
-                time = re.search('data="(\d+)"', str(cells[2])).group(1)
-                cloud = NODE_RE.search(str(cells[3])).group('cloud')
-                if cloud not in AZ:
-                    AZ.append(cloud)
-                print "Found cloud %s => %s" % (cloud, time)
-                if int(time) < (30 * 60 * 1000):
-                    print "Suspect run time"
+            print "Found build %s" % build
+            time = build['duration']
+            cloud = NODE_RE.search(build['builtOn']).group('cloud')
+            if cloud not in AZ:
+                AZ.append(cloud)
+            print "Found cloud %s => %s" % (cloud, time)
+            if int(time) < (30 * 60 * 1000):
+                print "Suspect run time"
 
-                data.append(dict(
-                    buildid=bid,
-                    time=time,
-                    cloud=cloud
-                ))
+            data.append(dict(
+                buildid=build['id'],
+                time=time,
+                cloud=cloud
+            ))
 
     AZ = sorted(AZ)
     return AZ, data

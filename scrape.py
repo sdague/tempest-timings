@@ -14,6 +14,7 @@
 
 import argparse
 import json
+import ssl
 
 import urllib2
 import pprint
@@ -35,6 +36,10 @@ JENKINS = (
 
 NODE_RE = re.compile('(devstack|bare)-(precise|trusty)-(?P<cloud>[\w\-]+)-')
 
+context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+context.verify_mode = ssl.CERT_NONE
+context.check_hostname = False
+
 
 def collect_data(job):
     AZ = []
@@ -45,7 +50,7 @@ def collect_data(job):
     data = []
     for url in urls:
         print "scraping %s" % url
-        page = urllib2.urlopen(url)
+        page = urllib2.urlopen(url, context=context)
         content = json.loads(page.read())
 
         for build in content['builds']:
@@ -145,8 +150,9 @@ def parse_args():
 
 def main():
     args = parse_args()
-    plot_data("check-tempest-dsvm-full", fake=args.fake, save=args.save)
-    plot_data("check-tempest-dsvm-postgres-full",
+    plot_data("gate-tempest-dsvm-full", fake=args.fake, save=args.save)
+    plot_data("gate-tempest-dsvm-neutron-full", fake=args.fake, save=args.save)
+    plot_data("gate-tempest-dsvm-postgres-full",
               fake=args.fake, save=args.save)
     plot_data("gate-nova-python27", fake=args.fake, save=args.save)
 
